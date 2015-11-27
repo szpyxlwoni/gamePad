@@ -1,0 +1,13 @@
+.ready-one, .ready-two, .this-one, .this-two{
+	position: absolute;
+        z-index:99;
+}
+
+.this-one, .this-two, .gaming, .gaining, .message-info, .card-left, .drop-card {
+	display: none;
+        position: absolute;
+}
+
+.card-left {
+left: 300px;
+}

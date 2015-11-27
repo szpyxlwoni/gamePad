@@ -2,18 +2,53 @@
 <html>
   <head>
     <title>桌游</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="../css/main.css">
     <script type="text/javascript" src="../js/libs/underscore.min.js"></script>
     <script type="text/javascript" src="../js/libs/three.min.js"></script>
     <script type="text/javascript" src="../js/libs/jquery.min.js"></script>
+    <script type="text/javascript" src="../js/libs/tween.min.js"></script>
     <style>
         body {
            margin:0;
            overflow:hidden;
-	}
+	    }
     </style>
   </head>
   <body>
     <div id="WebGL-output">
+	<div class="card-left">剩余卡牌<span></span></div>
+	<div class="drop-card">弃牌</div>
+	<div class="ready">
+		<div class="ready-one">等待玩家</div>
+		<div class="ready-two">等待玩家</div>
+		<div class="this-one">您的位置-----</div>
+		<div class="this-two">您的位置-----</div>
+	</div>
+	<div class="gaming">
+	        <div class="choose-one">获得卡牌</div>
+	        <div class="choose-two">出售卡牌</div>
+	</div>
+	<div class="gaining">
+	        <div class="choose-three">交换多张</div>
+	        <div class="choose-four">获得单张</div>
+	        <div class="choose-five">获得所有骆驼</div>
+			<div class="cancel">返回上级菜单</div>
+	</div>
+	<div class="message-info">等待对手行动</div>
+	<div class="player-info" style="position:absolute;bottom:0;">
+	    <div class="camel-number">驼群 X <span></span></div>
+	    <div class="diamond">钻石 <span></span></div>
+	    <div class="gold">黄金 <span></span></div>
+	    <div class="silver">白银 <span></span></div>
+	    <div class="leathear">皮革 <span></span></div>
+	    <div class="spice">香料 <span></span></div>
+	    <div class="cloth">布匹 <span></span></div>
+	    <div class="threeSign">三张奖励 <span></span></div>
+	    <div class="fourSign">四张奖励 <span></span></div>
+	    <div class="fiveSign">五张奖励 <span></span></div>
+	    <div class="win">获胜标志 X <span></span></div>
+	</div>
     </div>
     <script src="../js/libs/socket.io.js"></script>
     <script src="../js/game.main.js"></script>

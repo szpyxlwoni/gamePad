@@ -1,3 +1,9 @@
+body {
+	background-image : url('../img/background.jpg');
+	background-size: 100% 100%;
+color : white;
+}
+
 .ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info, .drop-card, .player-info {
     position: absolute;
 	z-index: 99;

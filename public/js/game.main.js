@@ -5,10 +5,9 @@
 	    var ws = io.connect('http://localhost:3000');
 		var _ = $window._;
 		var renderer;
-	    var oneTexture, twoTexture, threeTexture, fourTexture, fiveTexture, sixTexture, sevenTexture, backTexture, charTexture;
+	    var oneTexture, twoTexture, threeTexture, fourTexture, fiveTexture, sixTexture, sevenTexture, backTexture, charTexture, backgroundTexture;
 	    var cameraOrtho, sceneOrtho;
 	    var objects = [];
-	    var mouse, raycaster;
 	    var wWidth = window.innerWidth;
 		var wHeight = window.innerHeight;
 		var cardWPx = 128 / 1440;
@@ -19,16 +18,13 @@
 			$scope.player = {};
 			$scope.sceneType = 'preparing';
 			$scope.isOverCard = false;
-		    mouse = new THREE.Vector2();
-		    raycaster = new THREE.Raycaster();
 
 			cameraOrtho = new THREE.OrthographicCamera( - wWidth / 2, wWidth / 2, wHeight / 2, - wHeight / 2, 1, 10 );
 			cameraOrtho.position.z = 10;
 			sceneOrtho = new THREE.Scene();
 			sceneGamePad = new THREE.Scene();
 
-		    renderer = new THREE.WebGLRenderer();
-		    renderer.setClearColor(0xffffff);
+		    renderer = new THREE.WebGLRenderer({ alpha: true });
 		    renderer.setSize( window.innerWidth, window.innerHeight );
 		    renderer.autoClear = false;
 
@@ -84,9 +80,9 @@
 				objects = [];
 				_.each($scope.players, function(value){
 					var playerCardGroup = _.partition(value.currentCard, function(v){return v.type === 7});
-					$scope.player.camelNumber = playerCardGroup[0].length;
 					_.each(playerCardGroup[1], function(v, i){
 						if (value.id === $scope.player.id) {
+					        $scope.player.camelNumber = playerCardGroup[0].length;
 						    createCard(v, i, 230, 50);
 						} else {
 					        createBackCard(i);
@@ -170,15 +166,16 @@
 		}
 
 		$scope.chooseFour = function () {
-			var leftCard = _.reject(player.currentCard, function(v){return v.isSelect === true});
+			var leftCard = _.reject($scope.player.currentCard, function(v){return v.isSelect === true});
 			if (_.reject(leftCard, function(v){return v.type === 7}).length > 6) {
 				window.alert("请选择弃掉的牌");
 			} else {
-				ws.emit('turnOver', {'players': $scope.player});
+				ws.emit('turnOver', {'player': $scope.player});
 			}
 		}
 
 		function checkTurnOver() {
+			$scope.isOverCard = false;
 			if ($scope.sceneType === 'turnOver' && $scope.turn === $scope.player.id) {
 				var count = 0;
 				_.each($scope.signs, function(v) {
@@ -196,6 +193,7 @@
 						if (_.reject($scope.player.currentCard, function(v){return v.type === 7}).length > 6) {
 							window.alert("手牌超过上限，请弃牌");
 							$scope.isOverCard = true;
+							$scope.$apply();
 						} else {
 							ws.emit('turnOver');
 						}
@@ -207,14 +205,15 @@
 		var loadAllTexture = function () {
 		    var loader = new THREE.TextureLoader();
 			charTexture = loader.load( "../img/char.png");
-			oneTexture = loader.load( "../img/diamond.png");
-			twoTexture = loader.load( "../img/gold.png");
-			threeTexture = loader.load( "../img/silver.png");
-			fourTexture = loader.load( "../img/leather.png");
-			fiveTexture = loader.load( "../img/spice.png");
-		    sixTexture = loader.load( "../img/cloth.png");
-			sevenTexture = loader.load( "../img/camel.png");
-			backTexture = loader.load( "../img/back.png");
+			oneTexture = loader.load( "../img/diamond.jpg");
+			twoTexture = loader.load( "../img/gold.jpg");
+			threeTexture = loader.load( "../img/silver.jpg");
+			fourTexture = loader.load( "../img/leather.jpg");
+			fiveTexture = loader.load( "../img/spice.jpg");
+		    sixTexture = loader.load( "../img/cloth.jpg");
+			sevenTexture = loader.load( "../img/camel.jpg");
+			backTexture = loader.load( "../img/back.jpg");
+			backgroundTexture = loader.load( "../img/background.jpg");
 		}
 
 		var addListener = function () {
@@ -225,7 +224,7 @@
 		var createSprite = function (texture, width, height, scene) {
 			var material = new THREE.SpriteMaterial( { map: texture } );
 			
-			sprite = new THREE.Sprite(material);
+			var sprite = new THREE.Sprite(material);
 			sprite.scale.set(width, height, 1);
 			scene.add(sprite);
 
@@ -301,6 +300,13 @@
                     && Math.abs(- v.position.y + wHeight / 2 - event.clientY) < v.scale.y / 2 && !clicked) {
 				    v.userObject.isSelect = !v.userObject.isSelect;
 					clicked = true;
+					if (v.userObject.type === 7) {
+						_.map($scope.market, function(value){
+							if (value.type === 7) {
+							    value.isSelect = v.userObject.isSelect;
+							}
+						});
+					}
 				}
 			});
 		    render();

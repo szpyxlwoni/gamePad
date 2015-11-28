@@ -276,8 +276,8 @@ io.on('connection', function(socket){
 		  var leftCard = _.reject(msg.player.currentCard, function(v){return v.isSelect === true});
 		  _.map(players, function(v){
 			  if (v.id === msg.player.id) {
-				  player.currentCard = leftCard;
-				  return player;
+				  v.currentCard = leftCard;
+				  return v;
 			  }
 		  });
 	  }

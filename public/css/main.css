@@ -1,13 +1,20 @@
-.ready-one, .ready-two, .this-one, .this-two{
-	position: absolute;
-        z-index:99;
+.ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info, .drop-card, .player-info {
+    position: absolute;
+	z-index: 99;
 }
 
-.this-one, .this-two, .gaming, .gaining, .message-info, .card-left, .drop-card {
-	display: none;
-        position: absolute;
+.player-info {
+    bottom: 0;
 }
 
-.card-left {
-left: 300px;
+.gaming {
+    bottom: 100px;
+	right : 100px;
+}
+
+.gaming div {
+    border : 2px #000 solid;
+	border-radius : 50%;
+    height: 50px;
+    width: 50px;
 }

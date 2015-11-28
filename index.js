@@ -11,6 +11,7 @@ var playerPosition = [0, 0];
 var returnValue = {sceneType:'ready', players:[]};
 var cards = [];
 var signs = [];
+var market = [];
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -85,9 +86,9 @@ function initSigns() {
 	signs.push(new Sign("钻石", 1, [7,7,5,5,5]));
 	signs.push(new Sign("黄金", 2, [6,6,5,5,5]));	
 	signs.push(new Sign("白银", 3, [5,5,5,5,5]));
-	signs.push(new Sign("皮革", 4, [4]));//,3,2,1,1,1,1,1,1]));	
-	signs.push(new Sign("香料", 5, [5]));//,3,3,2,2,1,1]));	
-	signs.push(new Sign("布匹", 6, [5]));//,3,3,2,2,1,1]));
+	signs.push(new Sign("皮革", 4, [4,3,2,1,1,1,1,1,1]));	
+	signs.push(new Sign("香料", 5, [5,3,3,2,2,1,1]));	
+	signs.push(new Sign("布匹", 6, [5,3,3,2,2,1,1]));
 	signs.push(new Sign("3张牌的奖励", 8, _.shuffle([3,3,2,2,2,1,1])));
 	signs.push(new Sign("4张牌的奖励", 9, _.shuffle([4,4,5,5,6,6])));
 	signs.push(new Sign("5张牌的奖励", 10, _.shuffle([8,8,9,10,10])));
@@ -118,7 +119,7 @@ io.on('connection', function(socket){
       playerNumber++;
       playerPosition[position] = 1;
       players.push(new Player(id, 'logined', socket.id));
-      returnValue.sceneType = 'ready';
+      returnValue.sceneType = 'preparing';
       returnValue.players = players;
       broadcast(returnValue);
   });
@@ -126,7 +127,7 @@ io.on('connection', function(socket){
   socket.on('ready', function (){
       console.log('player ' + id + ' ready');
       _.map(players, function(v){
-	      if (v.id == id) {
+	      if (v.id === id) {
 	          v.state = 'ready';
 	      }
       });
@@ -141,7 +142,8 @@ io.on('connection', function(socket){
 			  returnValue.players[0].currentCard.push({type:cards.pop().type, isSelect:false});
 			  returnValue.players[1].currentCard.push({type:cards.pop().type, isSelect:false});
 		  }
-		  returnValue.market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:cards.pop().type, isSelect:false},{type:cards.pop().type, isSelect:false}];
+		  market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:cards.pop().type, isSelect:false},{type:cards.pop().type, isSelect:false}];
+		  returnValue.market = market;
 		  returnValue.signs = signs;
 		  returnValue.turn = _.sample(players).id;
       }
@@ -149,75 +151,143 @@ io.on('connection', function(socket){
       broadcast(returnValue);
   });
 
+  function updateCurrentCardFromPlayers(one) {
+	  _.map(players, function (v) {
+	      if (v.id === one.id) {
+		      v.currentCard = one.currentCard;
+		  }
+		  return v;
+	  });
+  }
+
+  function unselectAllCard(value) {
+	  _.map(value.market, function(v){v.isSelect = false;return v});
+	  _.map(value.players[0].currentCard, function(v){v.isSelect = false;return v});
+	  _.map(value.players[1].currentCard, function(v){v.isSelect = false;return v});
+  }
+
   socket.on('sell', function(msg){
 	  console.log('player ' + id + ' sell');
 	  console.log(msg);
+	  var updatedPlayer = msg.player;
+	  var awardType = 0;
+	  var playerPartition = _.partition(updatedPlayer.currentCard, function(v){return v.isSelect === true});
+	  for (var i = 0; i < playerPartition[0].length; i++) {
+	      var sign = _.findWhere(signs, {type:playerPartition[0][i].type});
+		  if (sign.values.length > 0) {
+		      _.map(updatedPlayer.signs, function (v){
+			      if (v.type === playerPartition[0][i].type) {
+			    	  v.values.push(sign.values.shift());
+			    	  return v;
+			      }
+			  });
+		  }
+	  }
+      if (playerPartition[0].length >=5) {
+		  awardType = 10;
+	  } else if (playerPartition[0].length >= 4) {
+		  awardType = 9;
+	  } else if (playerPartition[0].length >= 3) {
+		  awardType = 8;
+	  }
+	  var sign = _.findWhere(signs, {type:awardType});
+	  if (sign) {
+		  _.map(updatedPlayer.signs, function (v){
+			  if (v.type === awardType) {
+				  v.values.push(sign.values.shift());
+				  return v;
+			  }
+		  });
+	  }
+	  updatedPlayer.currentCard = playerPartition[1];
+	  updateCurrentCardFromPlayers(updatedPlayer);
+
 	  returnValue.sceneType = 'turnOver';
-	  returnValue.market = msg.market;
-	  returnValue.players = msg.players;
-	  returnValue.signs = msg.signs;
-	  _.map(returnValue.market, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[0].currentCard, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[1].currentCard, function(v){v.isSelect = false;return v});
+	  returnValue.players = players;
+	  returnValue.signs = signs;
+	  unselectAllCard(returnValue);
       broadcast(returnValue);
   });
 
-  socket.on('getOne', function(msg){
-	  console.log('player ' + id + ' get one');
+  socket.on('getCard', function(msg){
+	  console.log('player ' + id + ' get');
 	  console.log(msg);
+	  var selected = _.partition(msg.market, function(v){return v.isSelect === true});
+	  var camelInMarket = _.filter(msg.market, function(v){return v.type === 7});
+	  if (selected[0].length === 0 || selected[0].length > 1 && selected[0].length !== camelInMarket.length) {
+	      return;
+	  }
+      _.map(players, function(v){
+		  if (v.id === id) {
+			  v.currentCard = v.currentCard.concat(selected[0]);
+			  return v;
+		  }
+	  });
+	  market = selected[1];
+	  if (market.length < 5) {
+	      var length = market.length;
+	      for (var i = 0; i < 5 - length; i++) {
+		      market.push({type:cards.pop().type, isSelect:false});
+		  }
+	  }
 	  returnValue.sceneType = 'turnOver';
-      msg.market.push({type:cards.pop().type, isSelect:false})
-	  returnValue.market = msg.market;
-	  returnValue.players = msg.players;
-	  _.map(returnValue.market, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[0].currentCard, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[1].currentCard, function(v){v.isSelect = false;return v});
+	  returnValue.market = market;
+	  returnValue.players = players;
+	  unselectAllCard(returnValue);
       broadcast(returnValue);
   });
 
   socket.on('exchange', function(msg){
 	  console.log('player ' + id + ' exchange');
 	  console.log(msg);
-	  returnValue.sceneType = 'turnOver';
-	  returnValue.market = msg.market;
-	  returnValue.players = msg.players;
-	  _.map(returnValue.market, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[0].currentCard, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[1].currentCard, function(v){v.isSelect = false;return v});
-      broadcast(returnValue);
-  });
-
-  socket.on('getAllCamel', function(msg){
-	  console.log('player ' + id + ' get all camel');
-	  console.log(msg);
-	  returnValue.sceneType = 'turnOver';
-	  returnValue.market = msg.market;
-	  if (returnValue.market.length < 5) {
-	      var length = returnValue.market.length;
-	      for (var i = 0; i < 5 - length; i++) {
-		      returnValue.market.push({type:cards.pop().type, isSelect:false})
-		  }
+	  var marketPartition = _.partition(msg.market, function (v){return v.isSelect});
+	  var playerPartition = _.partition(msg.player.currentCard, function(v){return v.isSelect});
+	  if (marketPartition[0].length === playerPartition[0].length) {
+		  _.each(players, function(v){
+			  if (v.id === msg.player.id) {
+				  v.currentCard = playerPartition[1].concat(marketPartition[0]);
+				  return v;
+			  }
+		  });
+		  market = marketPartition[1].concat(playerPartition[0]);
+	  } else if (marketPartition[0].length >= playerPartition[0].length) {
+	      var camelInEx;
+		  _.each(players, function(v){
+			  if (v.id === msg.player.id) {
+				  var cardPartition = _.partition(v.currentCard, function(value){return value.type === 7});
+				  var camelPartition = _.partition(cardPartition[0], function(value,i){return i < marketPartition[0].length - playerPartition[0].length});
+				  v.currentCard = marketPartition[0].concat(_.reject(playerPartition[1], function(value){return value.type === 7})).concat(camelPartition[1]);
+				  camelInEx = camelPartition[0];
+				  return v;
+			  }
+		  });
+		  market = marketPartition[1].concat(playerPartition[0]).concat(camelInEx);
 	  }
-	  returnValue.players = msg.players;
-	  _.map(returnValue.market, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[0].currentCard, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[1].currentCard, function(v){v.isSelect = false;return v});
+	  returnValue.sceneType = 'turnOver';
+	  returnValue.market = market;
+	  returnValue.players = players;
+	  unselectAllCard(returnValue);
       broadcast(returnValue);
   });
 
   socket.on('turnOver', function(msg){
 	  console.log('player ' + id + ' turnOver');
-	  console.log(msg);
+	  if (msg && msg.player) {
+		  var leftCard = _.reject(msg.player.currentCard, function(v){return v.isSelect === true});
+		  _.map(players, function(v){
+			  if (v.id === msg.player.id) {
+				  player.currentCard = leftCard;
+				  return player;
+			  }
+		  });
+	  }
 	  returnValue.sceneType = 'gaming';
 	  returnValue.turn = returnValue.turn % 2 + 1;
-	  returnValue.market = msg.market;
-	  returnValue.players = msg.players;
-	  _.map(returnValue.market, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[0].currentCard, function(v){v.isSelect = false;return v});
-	  _.map(returnValue.players[1].currentCard, function(v){v.isSelect = false;return v});
+	  returnValue.players = players;
+	  returnValue.market = market;
+	  unselectAllCard(returnValue);
       broadcast(returnValue);
   });
-
   
   socket.on('roundOver', function(msg){
 	  console.log('roundOver');
@@ -278,7 +348,7 @@ io.on('connection', function(socket){
       _.map(players, function(v) {
 	      v.state = 'logined';
       });
-      returnValue.sceneType = 'ready';
+      returnValue.sceneType = 'preparing';
       returnValue.players = players;
 	  returnValue.turn = undefined;
       broadcast(returnValue);

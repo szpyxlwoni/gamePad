@@ -4,20 +4,22 @@
     <title>斋浦尔</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
     <script type="text/javascript" src="../js/libs/underscore.min.js"></script>
     <script type="text/javascript" src="../js/libs/three.min.js"></script>
     <script type="text/javascript" src="../js/libs/jquery.min.js"></script>
     <script type="text/javascript" src="../js/libs/tween.min.js"></script>
     <script type="text/javascript" src="../js/libs/angular.min.js"></script>
+    <script type="text/javascript" src="../js/libs/ui-bootstrap-tpls-0.14.3.min.js"></script>
     <style>
         body {
            margin:0;
-           overflow:hidden;
+           overflow: scroll;
 	    }
     </style>
   </head>
   <body ng-controller="JaipurCtrl" ng-init='init()'>
-    <div id="WebGL-output">
+    <div class="game-content">
 	<div ng-show="sceneType === 'preparing'" class="ready">
 		<div class="ready-one" ng-click="ready()"></div>
 		<div class="ready-two"></div>
@@ -34,25 +36,19 @@
 	        <div ng-show="isOverCard" class="drop-card" ng-click="chooseFour()">弃牌</div>
 		</div>
 		<div ng-show="turn !== player.id" class="message-info">等待对手行动</div>
-		<div class="player-info">
-	        <div class="card-left">剩余卡牌<span ng-bind="cards.length"></span></div>
-			<div class="camel-number">驼群 X <span ng-bind="player.camelNumber"></span></div>
-			<div class="diamond">钻石 <span ng-bind="diamondNumber"></span></div>
-			<div class="gold">黄金 <span ng-bind="goldNumber"></span></div>
-			<div class="silver">白银 <span></span></div>
-			<div class="leathear">皮革 <span></span></div>
-			<div class="spice">香料 <span></span></div>
-			<div class="cloth">布匹 <span></span></div>
-			<div class="threeSign">三张奖励 <span></span></div>
-			<div class="fourSign">四张奖励 <span></span></div>
-			<div class="fiveSign">五张奖励 <span></span></div>
-			<div class="win">获胜标志 X <span></span></div>
-		</div>
+	    <div class="card-left"><span ng-bind="cards.length"></span></div>
+	    <div class="camel-number"><span ng-bind="player.camelNumber"></span></div>
 	</div>
     </div>
+	<div ng-show="sceneType === 'gaming' || sceneType === 'turnOver'" class="player-info">
+		<div class="goods">卢比: <span ng-bind="player.goods"></span></div>
+		<div class="sign">奖励 <span ng-bind="signValue()"></span></div>
+		<div class="win">获胜标志 <span ng-bind="player.winSign"></span></div>
+	</div>
     <script src="../js/libs/socket.io.js"></script>
     <script src="../js/game.main.js"></script>
-    </script>
-    </script>
+	<script type="text/ng-template" id="toast.html">
+	    {{toastMessage}}
+	</script>
   </body>
 </html>

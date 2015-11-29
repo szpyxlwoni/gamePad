@@ -1,26 +1,98 @@
 body {
-	background-image : url('../img/background.jpg');
-	background-size: 100% 100%;
-color : white;
+    background-image : url('../img/back-main.jpg');
+    width : 1280px;
 }
 
-.ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info, .drop-card, .player-info {
+.game-content {
+    width : 960px;
+	height : 640px;
+	color : white;
+    position : absolute;
+	bottom : 0;
+}
+
+canvas {
+	background-image : url('../img/background.jpg');
+	background-size: 100% 100%;
+}
+
+.player-info {
+    float: right;
+	width : 320px;
+	background-color : white;
+}
+
+.ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info {
     position: absolute;
 	z-index: 99;
 }
 
-.player-info {
-    bottom: 0;
-}
-
 .gaming {
     bottom: 100px;
-	right : 100px;
+	right : 60px;
 }
 
-.gaming div {
+.message-info {
+    position : absolute;
+	bottom: 100px;
+	right : 60px;
+}
+
+.choose-one, .choose-two, .choose-three, .drop-card {
     border : 2px #000 solid;
 	border-radius : 50%;
-    height: 50px;
-    width: 50px;
+	width: 60px;
+    height: 60px;
+	text-align: center;
+	line-height: 60px;
+}
+
+.choose-one {
+    position: absolute;
+    top: -60px;
+    left: -50px;
+}
+
+.choose-two {
+    position: absolute;
+	left: -100px;
+}
+
+.drop-card {
+    position: absolute;
+	left: -50px;
+	top: -50px;
+}
+
+.card-left, .camel-number {
+    position: absolute;
+	font-weight: bold;
+}
+
+.modal {
+	text-align: center;
+	padding: 0!important;
+}
+
+.modal:before {
+	content: '';
+	display: inline-block;
+    height: 100%;
+	vertical-align: middle;
+	margin-right: -4px;
+}
+
+.modal-dialog {
+	display: inline-block;
+	text-align: left;
+	vertical-align: middle;
+}
+
+.toast .modal-content {
+	background-color: #000;
+	border: 0;
+	margin: 0 auto;
+	color: white;
+	text-align: center;
+	padding : 20px;
 }

@@ -37,28 +37,13 @@ var Player = function(id, state, socketId) {
 	this.signs = [];
 	this.winSign = 0;
 	this.mostCamel = 0;
-	this.signs.push(new Sign("钻石", 1, []));
-	this.signs.push(new Sign("黄金", 2, []));
-	this.signs.push(new Sign("白银", 3, []));
-	this.signs.push(new Sign("皮革", 4, []));
-	this.signs.push(new Sign("香料", 5, []));
-	this.signs.push(new Sign("布匹", 6, []));
-	this.signs.push(new Sign("3张牌的奖励", 8, []));
-	this.signs.push(new Sign("4张牌的奖励", 9, []));
-	this.signs.push(new Sign("5张牌的奖励", 10, []));
+	this.goods = 0;
+	this.award = [];
 }
 
 function zeroSign(player) {
-	player.signs = [];
-	player.signs.push(new Sign("钻石", 1, []));
-	player.signs.push(new Sign("黄金", 2, []));
-	player.signs.push(new Sign("白银", 3, []));
-	player.signs.push(new Sign("皮革", 4, []));
-	player.signs.push(new Sign("香料", 5, []));
-	player.signs.push(new Sign("布匹", 6, []));
-	player.signs.push(new Sign("3张牌的奖励", 8, []));
-	player.signs.push(new Sign("4张牌的奖励", 9, []));
-	player.signs.push(new Sign("5张牌的奖励", 10, []));
+	this.goods = 0;
+	this.award = [];
 }
 
 function initCards() {
@@ -69,11 +54,11 @@ function initCards() {
 		cards.push(new Card("钻石", 1));
 	}
 	for (var i = 0; i < 8; i++) {
-		cards.push(new Card("香料", 5));
-		cards.push(new Card("布匹", 6));
+		cards.push(new Card("香料", 4));
+		cards.push(new Card("丝绸", 5));
 	}
 	for (var i = 0; i < 10; i++) {
-		cards.push(new Card("皮革", 4));
+		cards.push(new Card("布匹", 6));
 	}
 	for (var i = 0; i < 8; i++) {
 		cards.push(new Card("骆驼", 7));
@@ -86,9 +71,9 @@ function initSigns() {
 	signs.push(new Sign("钻石", 1, [7,7,5,5,5]));
 	signs.push(new Sign("黄金", 2, [6,6,5,5,5]));	
 	signs.push(new Sign("白银", 3, [5,5,5,5,5]));
-	signs.push(new Sign("皮革", 4, [4,3,2,1,1,1,1,1,1]));	
+	signs.push(new Sign("布匹", 6, [4,3,2,1,1,1,1,1,1]));	
 	signs.push(new Sign("香料", 5, [5,3,3,2,2,1,1]));	
-	signs.push(new Sign("布匹", 6, [5,3,3,2,2,1,1]));
+	signs.push(new Sign("丝绸", 4, [5,3,3,2,2,1,1]));
 	signs.push(new Sign("3张牌的奖励", 8, _.shuffle([3,3,2,2,2,1,1])));
 	signs.push(new Sign("4张牌的奖励", 9, _.shuffle([4,4,5,5,6,6])));
 	signs.push(new Sign("5张牌的奖励", 10, _.shuffle([8,8,9,10,10])));
@@ -151,15 +136,6 @@ io.on('connection', function(socket){
       broadcast(returnValue);
   });
 
-  function updateCurrentCardFromPlayers(one) {
-	  _.map(players, function (v) {
-	      if (v.id === one.id) {
-		      v.currentCard = one.currentCard;
-		  }
-		  return v;
-	  });
-  }
-
   function unselectAllCard(value) {
 	  _.map(value.market, function(v){v.isSelect = false;return v});
 	  _.map(value.players[0].currentCard, function(v){v.isSelect = false;return v});
@@ -175,12 +151,7 @@ io.on('connection', function(socket){
 	  for (var i = 0; i < playerPartition[0].length; i++) {
 	      var sign = _.findWhere(signs, {type:playerPartition[0][i].type});
 		  if (sign.values.length > 0) {
-		      _.map(updatedPlayer.signs, function (v){
-			      if (v.type === playerPartition[0][i].type) {
-			    	  v.values.push(sign.values.shift());
-			    	  return v;
-			      }
-			  });
+		      updatedPlayer.goods += sign.values.shift();
 		  }
 	  }
       if (playerPartition[0].length >=5) {
@@ -192,15 +163,18 @@ io.on('connection', function(socket){
 	  }
 	  var sign = _.findWhere(signs, {type:awardType});
 	  if (sign) {
-		  _.map(updatedPlayer.signs, function (v){
-			  if (v.type === awardType) {
-				  v.values.push(sign.values.shift());
-				  return v;
-			  }
-		  });
+          var value = sign.values.shift()
+		  updatedPlayer.award.push(value);
 	  }
 	  updatedPlayer.currentCard = playerPartition[1];
-	  updateCurrentCardFromPlayers(updatedPlayer);
+	  _.map(players, function (v) {
+		  if (v.id === updatedPlayer.id) {
+			  v.currentCard = updatedPlayer.currentCard;
+			  v.goods = updatedPlayer.goods;
+			  v.award = updatedPlayer.award;
+		  }
+		  return v;
+	  });
 
 	  returnValue.sceneType = 'turnOver';
 	  returnValue.players = players;
@@ -227,7 +201,10 @@ io.on('connection', function(socket){
 	  if (market.length < 5) {
 	      var length = market.length;
 	      for (var i = 0; i < 5 - length; i++) {
-		      market.push({type:cards.pop().type, isSelect:false});
+		      var oneCard = cards.pop();
+			  if (oneCard) {
+		          market.push({type:oneCard.type, isSelect:false});
+			  }
 		  }
 	  }
 	  returnValue.sceneType = 'turnOver';

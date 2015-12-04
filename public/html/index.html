@@ -1,0 +1,36 @@
+<!doctype html>
+<html ng-app="boardGame" id="boardGame">
+  <head>
+    <title>就爱玩桌游</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <script type="text/javascript" src="../js/libs/underscore.min.js"></script>
+    <script type="text/javascript" src="../js/libs/three.min.js"></script>
+    <script type="text/javascript" src="../js/libs/jquery.min.js"></script>
+    <script type="text/javascript" src="../js/libs/tween.min.js"></script>
+    <script type="text/javascript" src="../js/libs/angular.min.js"></script>
+    <script type="text/javascript" src="../js/libs/angular-ui-router.js"></script>
+    <script type="text/javascript" src="../js/libs/angular-messages.min.js"></script>
+    <script type="text/javascript" src="../js/libs/ui-bootstrap-tpls-0.14.3.min.js"></script>
+    <script type="text/javascript" src="../js/libs/validate.min.js"></script>
+    <script type="text/javascript" src="../js/libs/svg.min.js"></script>
+    <style>
+        body {
+           margin:0;
+           overflow: scroll;
+	    }
+    </style>
+  </head>
+  <body>
+  <div ui-view="content"></div>
+  <script src="../js/libs/socket.io.js"></script>
+  <script src="../js/game.main.js"></script>
+  <script src="../js/jaipur/main.js"></script>
+  <script src="../js/account/account.js"></script>
+	<script type="text/ng-template" id="toast.html">
+	    {{toastMessage}}
+	</script>
+  </body>
+</html>

@@ -25,5 +25,30 @@
 				}
 			}
 		});
+		$stateProvider.state('login', {
+            url : '/login',
+			views :{
+			    'content': {
+				    templateUrl : webUrl + '/account/login.html',
+					controller : function($scope, $http, $window, $stateParams) {
+						$scope.user = {
+						};
+
+					    $scope.login = function () {
+						    if (!$scope.user.username || !$scope.user.password) {
+							    return;
+							}
+					    	$http({
+					    		url : serverUrl + '/login',
+					    		method : 'POST',
+					    		data : $scope.user
+					    	}).success(function (data) {
+								console.log(data);
+					    	});
+					    }
+					}
+				}
+			}
+		});
 	});
 })()

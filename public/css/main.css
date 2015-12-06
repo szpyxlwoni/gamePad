@@ -1,12 +1,8 @@
 body {
     background-image : url('../img/back-main.jpg');
-    width : 1600px;
-	height : 900px;
 }
 
-.jaipur-content {
-	height : 900px;
-	color : white;
+#jaipur-canvas {
 	background-image : url('../img/background.jpg');
 	background-size: 100% 100%;
 }
@@ -20,6 +16,10 @@ body {
 .ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info {
     position: absolute;
 	z-index: 99;
+}
+
+.ready {
+	color : white;
 }
 
 .gaming {

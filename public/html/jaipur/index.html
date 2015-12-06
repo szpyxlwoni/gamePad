@@ -1,25 +1,5 @@
-<div id="jaipur-content" class="col-sm-10 jaipur-content">
-	<div ng-show="sceneType === 'preparing'" class="ready">
-		<div class="ready-one" ng-click="ready()"></div>
-		<div class="ready-two"></div>
-		<div class="this-one">您的位置-----</div>
-		<div class="this-two">对手位置-----</div>
-	</div>
-	<div ng-show="sceneType === 'gaming' || sceneType === 'turnOver'">
-		<div ng-show="turn === player.id" class="gaming">
-			<div ng-show="!isOverCard">
-				<div class="choose-one" ng-click="chooseOne()">拿牌</div>
-				<div class="choose-two" ng-click="chooseTwo()">卖牌</div>
-				<div class="choose-three" ng-click="chooseThree()">交换</div>
-			</div>
-			<div ng-show="isOverCard" class="drop-card" ng-click="chooseFour()">弃牌</div>
-		</div>
-		<div ng-show="turn !== player.id" class="message-info">等待对手行动</div>
-		<div class="card-left"><span ng-bind="cards.length"></span></div>
-		<div class="camel-number"><span ng-bind="player.camelNumber"></span></div>
-	</div>
-</div>
-<div ng-show="sceneType === 'gaming' || sceneType === 'turnOver'" class="col-sm-2">
+<canvas id="jaipur-canvas" class="col-sm-10 col-xs-12" width="1600" height="900"></canvas>
+<div ng-show="sceneType === 'gaming' || sceneType === 'turnOver'" class="col-sm-2 col-xs-12">
 	<div class="goods">卢比: <span ng-bind="player.goods"></span></div>
 	<div class="sign">奖励 <span ng-bind="signValue()"></span></div>
 	<div class="win">获胜标志 <span ng-bind="player.winSign"></span></div>

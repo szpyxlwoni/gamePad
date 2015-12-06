@@ -5,7 +5,7 @@
     boardGame.constant('serverUrl', '');
 
 	boardGame.config(function($stateProvider, $urlRouterProvider, webUrl, serverUrl, jaipurConfig, accountConfig){
-		$urlRouterProvider.otherwise("/index");
+		$urlRouterProvider.otherwise("/login");
 
 		jaipurConfig($stateProvider, webUrl, serverUrl);
 		accountConfig($stateProvider, webUrl, serverUrl);

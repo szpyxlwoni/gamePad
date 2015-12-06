@@ -135,7 +135,7 @@ var broadcast = function(msg){
 	  console.log(msg);
 	  var updatedPlayer = msg.player;
 	  var awardType = 0;
-	  var playerPartition = _.partition(updatedPlayer.currentCard, function(v){return v.isSelect === true});
+	  var playerPartition = _.partition(updatedPlayer.currentCard, function(v){return v.isSelect === true && v.type !== 7});
 	  for (var i = 0; i < playerPartition[0].length; i++) {
 	      var sign = _.findWhere(signs, {type:playerPartition[0][i].type});
 		  if (sign.values.length > 0) {
@@ -215,18 +215,8 @@ var broadcast = function(msg){
 			  }
 		  });
 		  market = marketPartition[1].concat(playerPartition[0]);
-	  } else if (marketPartition[0].length >= playerPartition[0].length) {
-	      var camelInEx;
-		  _.each(players, function(v){
-			  if (v.id === msg.player.id) {
-				  var cardPartition = _.partition(v.currentCard, function(value){return value.type === 7});
-				  var camelPartition = _.partition(cardPartition[0], function(value,i){return i < marketPartition[0].length - playerPartition[0].length});
-				  v.currentCard = marketPartition[0].concat(_.reject(playerPartition[1], function(value){return value.type === 7})).concat(camelPartition[1]);
-				  camelInEx = camelPartition[0];
-				  return v;
-			  }
-		  });
-		  market = marketPartition[1].concat(playerPartition[0]).concat(camelInEx);
+	  } else {
+	      return;
 	  }
 	  returnValue.sceneType = 'turnOver';
 	  returnValue.market = market;

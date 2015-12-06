@@ -3,69 +3,13 @@ body {
 }
 
 #jaipur-canvas {
-	background-image : url('../img/background.jpg');
+	background-image : url('../img/jaipur/background.jpg');
 	background-size: 100% 100%;
 }
 
 .player-info {
     float: right;
-	width : 320px;
 	background-color : white;
-}
-
-.ready-one, .ready-two, .this-one, .this-two, .gaming, .gaining, .message-info {
-    position: absolute;
-	z-index: 99;
-}
-
-.ready {
-	color : white;
-}
-
-.gaming {
-    left: 700px;
-	top: 550px;
-}
-
-.message-info {
-    position : absolute;
-	left : 700px;
-	top : 550px;
-}
-
-.choose-one, .choose-two, .choose-three, .drop-card {
-    border : 2px #000 solid;
-	border-radius : 50%;
-	width: 60px;
-    height: 60px;
-	text-align: center;
-	line-height: 60px;
-}
-
-.choose-one {
-    position: absolute;
-    left: -100px;
-}
-
-.choose-two {
-    position: absolute;
-	left: -20px;
-}
-
-.choose-three {
-    position: absolute;
-	left: 60px;
-}
-
-.drop-card {
-    position: absolute;
-	left: -50px;
-	top: -50px;
-}
-
-.card-left, .camel-number {
-    position: absolute;
-	font-weight: bold;
 }
 
 .modal {

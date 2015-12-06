@@ -9,7 +9,11 @@ function addUser(user, response) {
 	        pool.query(getUserFromPrincipalSQL, [user.username], function(err, res) {
 		        if (err) callback(err);
 
-				callback(null, res[0].count);
+				if (res.length === 0) {
+				    callback(null, 0);
+				} else {
+				    callback(null, res[0].count);
+				}
 	        });
 		},
 		function (resultCount, callback) {

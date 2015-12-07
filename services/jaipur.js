@@ -28,11 +28,7 @@ var Player = function(id, state, socketId) {
 	this.mostCamel = 0;
 	this.goods = 0;
 	this.award = [];
-}
-
-function zeroSign(player) {
-	this.goods = 0;
-	this.award = [];
+	this.total = 0;
 }
 
 function initCards() {
@@ -57,12 +53,12 @@ function initCards() {
 
 function initSigns() {
 	signs = [];
-	signs.push(new Sign("钻石", 1, [7,7,5,5,5]));
-	signs.push(new Sign("黄金", 2, [6,6,5,5,5]));	
+	signs.push(new Sign("钻石", 1, [5,5,5,7,7]));
+	signs.push(new Sign("黄金", 2, [5,5,5,6,6]));	
 	signs.push(new Sign("白银", 3, [5,5,5,5,5]));
-	signs.push(new Sign("布匹", 6, [4,3,2,1,1,1,1,1,1]));	
-	signs.push(new Sign("香料", 5, [5,3,3,2,2,1,1]));	
-	signs.push(new Sign("丝绸", 4, [5,3,3,2,2,1,1]));
+	signs.push(new Sign("布匹", 6, [1,1,1,1,1,1,2,3,4]));	
+	signs.push(new Sign("香料", 5, [1,1,2,2,3,3,5]));	
+	signs.push(new Sign("丝绸", 4, [1,1,2,2,3,3,5]));
 	signs.push(new Sign("3张牌的奖励", 8, _.shuffle([3,3,2,2,2,1,1])));
 	signs.push(new Sign("4张牌的奖励", 9, _.shuffle([4,4,5,5,6,6])));
 	signs.push(new Sign("5张牌的奖励", 10, _.shuffle([8,8,9,10,10])));
@@ -131,6 +127,9 @@ var broadcast = function(msg){
   }
 
   socket.on('sell', function(msg){
+	  if (returnValue.sceneType !== 'gaming' || returnValue.turn !== id) {
+	      return;
+	  }
 	  console.log('player ' + id + ' sell');
 	  console.log(msg);
 	  var updatedPlayer = msg.player;
@@ -139,7 +138,9 @@ var broadcast = function(msg){
 	  for (var i = 0; i < playerPartition[0].length; i++) {
 	      var sign = _.findWhere(signs, {type:playerPartition[0][i].type});
 		  if (sign.values.length > 0) {
-		      updatedPlayer.goods += sign.values.shift();
+		      var one = sign.values.pop()
+		      updatedPlayer.goods += one;
+		      updatedPlayer.total += one;
 		  }
 	  }
       if (playerPartition[0].length >=5) {
@@ -151,8 +152,9 @@ var broadcast = function(msg){
 	  }
 	  var sign = _.findWhere(signs, {type:awardType});
 	  if (sign) {
-          var value = sign.values.shift()
+          var value = sign.values.pop()
 		  updatedPlayer.award.push(value);
+		  updatedPlayer.total += value;
 	  }
 	  updatedPlayer.currentCard = playerPartition[1];
 	  _.map(players, function (v) {
@@ -160,6 +162,7 @@ var broadcast = function(msg){
 			  v.currentCard = updatedPlayer.currentCard;
 			  v.goods = updatedPlayer.goods;
 			  v.award = updatedPlayer.award;
+			  v.total = updatedPlayer.total;
 		  }
 		  return v;
 	  });
@@ -172,6 +175,9 @@ var broadcast = function(msg){
   });
 
   socket.on('getCard', function(msg){
+	  if (returnValue.sceneType !== 'gaming' || returnValue.turn !== id) {
+	      return;
+	  }
 	  console.log('player ' + id + ' get');
 	  console.log(msg);
 	  var selected = _.partition(msg.market, function(v){return v.isSelect === true});
@@ -203,6 +209,9 @@ var broadcast = function(msg){
   });
 
   socket.on('exchange', function(msg){
+	  if (returnValue.sceneType !== 'gaming' || returnValue.turn !== id) {
+	      return;
+	  }
 	  console.log('player ' + id + ' exchange');
 	  console.log(msg);
 	  var marketPartition = _.partition(msg.market, function (v){return v.isSelect});
@@ -226,6 +235,9 @@ var broadcast = function(msg){
   });
 
   socket.on('turnOver', function(msg){
+	  if (returnValue.sceneType !== 'turnOver') {
+	      return;
+	  }
 	  console.log('player ' + id + ' turnOver');
 	  if (msg && msg.player) {
 		  var leftCard = _.reject(msg.player.currentCard, function(v){return v.isSelect === true});
@@ -243,53 +255,93 @@ var broadcast = function(msg){
 	  unselectAllCard(returnValue);
       broadcast(returnValue);
   });
+
+  function initGame() {
+	  initCards();
+	  initSigns();
+	  players[0].currentCard = [];
+	  players[0].total = 0;
+	  players[0].goods = 0;
+	  players[0].award = [];
+	  players[1].currentCard = [];
+	  players[1].total = 0;
+	  players[1].goods = 0;
+	  players[1].award = [];
+	  for (var i = 0; i < 5; i++) {
+	      players[0].currentCard.push({type:cards.pop().type, isSelect:false});
+		  players[1].currentCard.push({type:cards.pop().type, isSelect:false});
+	  }
+	  market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:cards.pop().type, isSelect:false},{type:cards.pop().type, isSelect:false}];
+  }
   
   socket.on('roundOver', function(msg){
 	  console.log('roundOver');
-	  console.log(msg);
-	  returnValue.sceneType = 'gaming';
-	  var sum0 = _.reduce(msg.players[0].signs, function(mem, v){
-		  mem += _.reduce(v.values, function(aMem, value){aMem += value;return aMem;}, 0);
-		  return mem;
-	  }, 0);
-	  var sum1 = _.reduce(msg.players[1].signs, function(mem, v){
-		  mem += _.reduce(v.values, function(aMem, value){aMem += value;return aMem;}, 0);
-		  return mem;
-	  }, 0);
+	  returnValue.sceneType = 'roundOver';
+	  var sum0 = msg.players[0].total;
+	  var sum1 = msg.players[1].total;
 	  var camel0 = _.reduce(msg.players[0].currentCard, function (mem,v){if (v.type === 7){mem++;}return mem;}, 0);
 	  var camel1 = _.reduce(msg.players[1].currentCard, function (mem,v){if (v.type === 7){mem++;}return mem;}, 0);
 	  if (camel0 > camel1) {
 	      sum0 += 5;
+          msg.players[0].total += 5;
 	  } else if (camel1 < camel0) {
 	      sum1 += 5;
+          msg.players[1].total += 5;
 	  }
 	  if (sum0 > sum1) {
 	      msg.players[0].winSign += 1;
+	      msg.players[0].winThisRound = true;
 		  if (msg.players[0].winSign === 2) {
 			  returnValue.sceneType = 'gameOver';
 		  }
 	      returnValue.turn = msg.players[1].id;
 	  } else if (sum0 < sum1) {
 		  msg.players[1].winSign += 1;
+	      msg.players[1].winThisRound = true;
 		  if (msg.players[1].winSign === 2) {
 			  returnValue.sceneType = 'gameOver';
 		  }
 	      returnValue.turn = msg.players[0].id;
+	  } else {
+		  if (msg.players[0].award.length > msg.players[1].award.length) {
+			  msg.players[0].winSign += 1;
+	          msg.players[0].winThisRound = true;
+			  if (msg.players[0].winSign === 2) {
+				  returnValue.sceneType = 'gameOver';
+			  }
+			  returnValue.turn = msg.players[1].id;
+		  } else {
+		      msg.players[1].winSign += 1;
+	          msg.players[1].winThisRound = true;
+			  if (msg.players[1].winSign === 2) {
+				  returnValue.sceneType = 'gameOver';
+			  }
+			  returnValue.turn = msg.players[0].id;
+		  }
 	  }
-	  returnValue.players = msg.players;
-	  initCards();
-	  initSigns();
-	  returnValue.cards = cards;
-	  returnValue.players[0].currentCard = [];
-	  zeroSign(returnValue.players[0]);
-	  returnValue.players[1].currentCard = [];
-	  zeroSign(returnValue.players[1]);
-	  for (var i = 0; i < 5; i++) {
-	      returnValue.players[0].currentCard.push({type:cards.pop().type, isSelect:false});
-		  returnValue.players[1].currentCard.push({type:cards.pop().type, isSelect:false});
+	  players = msg.players;
+	  returnValue.players = players;
+	  returnValue.players[0].state = 'joined';
+	  returnValue.players[1].state = 'joined';
+      broadcast(returnValue);
+  });
+
+  socket.on('roundStart', function(){
+	  console.log('roundStart');
+	  _.map(returnValue.players, function (v) {
+		  if (v.id === id) {
+			  v.state = 'ready';
+		  }
+		  return v;
+	  });
+	  if (returnValue.players.length === 2 && !_.findWhere(returnValue.players, {state:'joined'})) {
+	      returnValue.sceneType = 'gaming';
+	      initGame();
+		  returnValue.signs = signs;
+		  returnValue.cards = cards;
+		  returnValue.players = players;
+		  returnValue.market = market;
 	  }
-	  returnValue.market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:cards.pop().type, isSelect:false},{type:cards.pop().type, isSelect:false}];
-	  returnValue.signs = signs;
       broadcast(returnValue);
   });
 

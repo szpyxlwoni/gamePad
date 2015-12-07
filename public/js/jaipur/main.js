@@ -12,12 +12,12 @@
 		                var diamond7, diamond5, gold6, gold5, silver5, leather5, leather3, leather2, leather1, spice5, spice3, spice2, spice1, cloth4, cloth3, cloth2, cloth1, camelTexture, threeSTexture, fourSTexture, fiveSTexture;
 	                    var wWidth = 1600;
 		                var wHeight = 900;
-		                var signSize = 80;
-		                var signPos = 300;
+		                var signSize = 90;
+		                var signPos = 400;
 		                var cardWidth = 128
 		                var cardHeight = 174;
-		                var cardPos = 600;
-						var label_info, warnbox, warnTimer;
+		                var cardPos = 700;
+						var label_info, warnbox, warnTimer, confirmBox, confirm_info, label_ok, buttonok;
 
 						var canvas = document.getElementById("jaipur-canvas");
 		                var stage = new createjs.Stage(canvas);
@@ -78,6 +78,42 @@
 
 						initWarnBox();
 
+						function initConfirmBox() {
+							var confirmBack = new createjs.Shape();
+							confirmBack.graphics.beginFill('#000');
+							confirmBack.alpha = 0.85;
+							confirmBack.graphics.drawRoundRect(0, 0, 500, 300, 20, 20, 20, 20);
+							confirmBack.graphics.endFill();
+
+							buttonok = new createjs.Shape();
+							buttonok.graphics.beginFill('#428BCA');
+							buttonok.graphics.setStrokeStyle(2,'round').beginStroke('#357EBD');
+							buttonok.graphics.drawRoundRect(167, 200, 170, 50, 5);
+							buttonok.cursor = "pointer";
+
+							confirm_info = new createjs.Text("message", "30px Microsoft YaHei", "#FFFFFF");
+							confirm_info.x = 250;
+							confirm_info.y = 50;
+							confirm_info.textAlign = 'center';
+							confirm_info.lineWidth = 300;
+
+							label_ok = new createjs.Text("message", "25px Microsoft YaHei", "#FFFFFF");
+							label_ok.x = 167 + 85;
+							label_ok.y = 200 + 13;
+							label_ok.textAlign = 'center';
+							label_ok.lineWidth = 100;
+							label_ok.lineHeight = 50;
+							label_ok.cursor = "pointer";
+
+
+							confirmBox = new createjs.Container();
+							confirmBox.x = wWidth / 2 - 250;
+							confirmBox.y = wHeight / 2 - 150;
+							confirmBox.addChild(confirmBack, buttonok, confirm_info, label_ok);
+						}
+
+						initConfirmBox();
+
 						function warnBox(message) {
 							label_info.text = message;
 							warnbox.visible = true;
@@ -94,11 +130,11 @@
 						}
 
 					    var render = function() {
-							stage.removeAllChildren();
-							stage.removeAllEventListeners();
 							var centerOfX = wWidth / 2;
 							var quaCenterOfY = wHeight / 4;
 							if ($scope.sceneType === 'preparing') {
+							    stage.removeAllChildren();
+							    stage.removeAllEventListeners();
 						        var text1 = createText('等待玩家', centerOfX + 100, quaCenterOfY, 20, "#fff");
 								text1.addEventListener("click", function (){
 							        ws.emit('ready');
@@ -117,6 +153,8 @@
 									}
 								});
 							} else if ($scope.sceneType === 'gaming' || $scope.sceneType === 'turnOver') {
+							    stage.removeAllChildren();
+							    stage.removeAllEventListeners();
 								if ($scope.player.id === $scope.turn) {
 								    createFuncBtn();
 								}
@@ -126,34 +164,74 @@
 									    _.each(playerCardGroup[1], function(v, i){
 									        $scope.player.camelNumber = playerCardGroup[0].length;
 											$scope.$apply();
-										    createCard(v, i, 600, 50);
+										    createCard(v, i, 600, 60);
 									    });
 										createCamelCard(playerCardGroup[0]);
 									} else {
 									    _.each(playerCardGroup[1], function(v, i){
-									        createBackCard(i, 50);
+									        createBackCard(i, 60);
 										});
 										if (playerCardGroup[0].length > 0) {
 								            var camelCard = createSprite('sevenTexture', cardWidth, cardHeight);
-								            positionSet(camelCard, 1100, 50);
+								            positionSet(camelCard, 1300, 50);
 										}
 									}
 								});
 
 								_.each($scope.market, function(v,i) {
-									createCard(v, i, quaCenterOfY + 100, 190);
+									createCard(v, i, quaCenterOfY + 100, 140);
 								});
 
 								_.each($scope.cards, function(v,i) {
 									createCardArray(i);
 								});
 
-								createText($scope.cards.length, 475, 500, 20, "#fff");
+								createText($scope.cards.length, 575, 500, 20, "#fff");
 
 								_.each($scope.signs, function(v) {
 									createSigns(v);
 								});
 
+							} else if ($scope.sceneType === 'roundOver') {
+								var yourScore = 0;
+								var rivalScore = 0;
+								var winThisRound;
+								_.each($scope.players, function(v) {
+								    if (v.id === $scope.player.id) {
+									    yourScore = v.total;
+								        winThisRound = v.winThisRound;
+									} else {
+									    rivalScore = v.total;
+									}
+								});
+								confirm_info.text = '第一轮结束，您的得分是' + yourScore + ', 对手的得分是' + rivalScore + '     ' + (winThisRound ? '您赢了' : '您输了');
+                                label_ok.text = '进入下一轮';
+							    buttonok.addEventListener('pressup', function (){
+									confirmBox.visible = false;
+									stage.update();
+									ws.emit('roundStart');
+								});
+								stage.addChild(confirmBox);
+							} else if ($scope.sceneType === 'gameOver') {
+								var yourScore = 0;
+								var rivalScore = 0;
+								var winThisRound;
+								_.each($scope.players, function(v) {
+								    if (v.id === $scope.player.id) {
+									    yourScore = v.total;
+								        winThisRound = v.winThisRound;
+									} else {
+									    rivalScore = v.total;
+									}
+								});
+							    buttonok.addEventListener('pressup', function (){
+									confirmBox.visible = false;
+									stage.update();
+									$window.location.reload();
+								});
+								confirm_info.text = '游戏结束，您的得分是' + yourScore + ', 对手的得分是' + rivalScore + '     ' + (winThisRound ? '您赢了' : '您输了');
+                                label_ok.text = '离开游戏';
+								stage.addChild(confirmBox);
 							}
 						    stage.update();
 						}
@@ -166,12 +244,12 @@
 									border.graphics.beginFill("#ff0000");
 									border.graphics.drawRoundRect(-3, -3, cardWidth + 6, cardHeight + 6, 5, 5, 5, 5);
 									var container = new createjs.Container();
-									container.x = 1100 + i * 30;;
+									container.x = 1200 + i * 30;;
 									container.y = 600;
 									container.addChild(border, camelCard);
 									stage.addChild(container);
 								} else {
-								    positionSet(camelCard, 1100 + i * 30, 600);
+								    positionSet(camelCard, 1200 + i * 30, 600);
 								}
 								camelCard.dataCard = v;
 								camelCard.addEventListener('click', function(event){
@@ -220,6 +298,10 @@
 									warnBox("至少选择一张卡牌才能出售");
 									return;
 								}
+								if (!_.every(playerPartition[0], function(v){return v.type === playerPartition[0][0].type})) {
+									warnBox("只能出售同类物品");
+									return;
+								}
 								if (_.filter(playerPartition[0], function(v){return v.type === 1}).length === 1) {
 									warnBox("钻石不能单张出售");
 									return;
@@ -230,10 +312,6 @@
 								}
 								if (_.filter(playerPartition[0], function(v){return v.type === 3}).length === 1) {
 									warnBox("白银不能单张出售");
-									return;
-								}
-								if (!_.every(playerPartition[0], function(v){return v.type === playerPartition[0][0].type})) {
-									warnBox("只能出售同类物品");
 									return;
 								}
 								ws.emit('sell', {'player': $scope.player});
@@ -267,9 +345,9 @@
 								}
 							});
 
-							positionSet(getBtn, 600, 525);
-							positionSet(exchangeBtn, 750, 525);
-							positionSet(sellBtn, 900, 525);
+							positionSet(getBtn, cardPos, 525);
+							positionSet(exchangeBtn, cardPos + 150, 525);
+							positionSet(sellBtn, cardPos + 300, 525);
 						}
 
 						$scope.signValue = function() {
@@ -287,10 +365,12 @@
 									}
 								});
 								if (count >= 3) {
-									ws.emit('roundOver', {'players':players, 'market':market});
+									ws.emit('roundOver', {'players': $scope.players, 'market': $scope.market});
+								    confirmBox.visible = true;
 								} else {
 									if ($scope.cards.length === 0 && $scope.market.length < 5) {
-										ws.emit('roundOver', {'players':players, 'market':market});
+									    ws.emit('roundOver', {'players': $scope.players, 'market': $scope.market});
+								        confirmBox.visible = true;
 									} else {
 										ws.emit('turnOver');
 									}
@@ -416,15 +496,15 @@
 
 					    function createCardArray(order) {
 							var newSprite = createSprite('backTexture', cardWidth, cardHeight);
-							var cardArrayX = 425;
+							var cardArrayX = 525;
 							var cardArrayY = 300;
 						    positionSet(newSprite, cardArrayX - order / 3, cardArrayY - order / 3);
 					    }
 
 						function createSigns(sign) {
-							var gap = 18;
-							var yStart = 200;
-							var gapInY = 90;
+							var gap = 30;
+							var yStart = 190;
+							var gapInY = 95;
 							switch(sign.type) {
 								case 1:
 									_.each(sign.values, function(v, i) {
@@ -435,7 +515,7 @@
 										    texture = 'diamond5';
 										}
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart);
 									});
 									break;
 								case 2:
@@ -447,7 +527,7 @@
 										    texture = 'gold5';
 										}
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart + gapInY);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart + gapInY);
 									});
 									break;
 								case 3:
@@ -455,7 +535,7 @@
 										var texture;
 										texture = 'silver5';
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart + gapInY * 2);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart + gapInY * 2);
 									});
 									break;
 								case 4:
@@ -471,7 +551,7 @@
 										    texture = 'leather1';
 										}
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart + gapInY * 4);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart + gapInY * 4);
 									});
 									break;
 								case 5:
@@ -487,7 +567,7 @@
 										    texture = 'spice1';
 										}
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart + gapInY * 5);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart + gapInY * 5);
 									});
 									break;
 								case 6:
@@ -503,23 +583,23 @@
 										    texture = 'cloth1';
 										}
 										var newSprite = createSprite(texture, signSize, signSize);
-										positionSet(newSprite, signPos - gap * i, yStart + gapInY * 6);
+										positionSet(newSprite, signPos - (sign.values.length - 1) * gap + gap * i, yStart + gapInY * 6);
 									});
 									break;
 								case 7:
 									var newSprite = createSprite('camelSTexture', signSize, signSize);
-									positionSet(newSprite, signPos - 240, yStart + gapInY * 3);
+									positionSet(newSprite, signPos - 300, yStart + gapInY * 3);
 									break;
 								case 8:
 									if (sign.values.length > 0) {
 										var newSprite = createSprite('threeSTexture', signSize, signSize);
-										positionSet(newSprite, signPos - 160, yStart + gapInY * 3);
+										positionSet(newSprite, signPos - 200, yStart + gapInY * 3);
 									}
 									break;
 								case 9:
 									if (sign.values.length > 0) {
 										var newSprite = createSprite('fourSTexture', signSize, signSize);
-										positionSet(newSprite, signPos - 80, yStart + gapInY * 3);
+										positionSet(newSprite, signPos - 100, yStart + gapInY * 3);
 									}
 									break;
 								case 10:

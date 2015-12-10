@@ -1,11 +1,11 @@
 (function() {
 	angular.module('boardGame').constant("jaipurConfig", function($stateProvider, webUrl) {
 		$stateProvider.state('jaipur', {
-            url : '/jaipur',
+            url : '/jaipur/{roomId}',
 			views :{
 			    'content': {
 				    templateUrl : webUrl + '/jaipur/index.html',
-					controller : function($scope, $window, $uibModal, $timeout, $stateParams) {
+					controller : function($scope, $window, $cookies, $uibModal, $timeout, $stateParams) {
 	                    var ws;
 		                var _ = $window._;
 	                    var oneTexture, twoTexture, threeTexture, fourTexture, fiveTexture, sixTexture, sevenTexture, backTexture, charTexture, backgroundTexture;
@@ -18,6 +18,7 @@
 		                var cardHeight = 174;
 		                var cardPos = 700;
 						var label_info, warnbox, warnTimer, confirmBox, confirm_info, label_ok, buttonok;
+						var token = $cookies.get('gamer_token');
 
 						var canvas = document.getElementById("jaipur-canvas");
 		                var stage = new createjs.Stage(canvas);
@@ -29,16 +30,17 @@
 			            $scope.isOverCard = false;
 
 						function handleComplete() {
-							ws = io.connect('http://localhost:9000/jaipurServer')
+							ws = io.connect('http://192.168.1.13:9000/jaipurServer?roomId=' + $stateParams.roomId + '&token=' + token);
 
 							ws.on('connect', function () {
 								ws.emit('join');
 							});
 
 		                    ws.on('return.state', function (data){
+		                    	console.log(data);
 								$scope.sceneType = data.sceneType;
 								$scope.signs = data.signs;
-								$scope.player = _.findWhere(data.players, {id:data.playerId});
+								$scope.player = data.players[token];
 								$scope.players = data.players;
 								$scope.market = data.market;
 								$scope.turn = data.turn;
@@ -142,9 +144,13 @@
 						        var text2 = createText('等待玩家', centerOfX + 100, quaCenterOfY * 3, 20, "#fff");
 						        createText('您的位置-----', centerOfX - 250, quaCenterOfY, 20, "#fff");
 						        createText('对手的位置---', centerOfX - 250, quaCenterOfY * 3, 20, "#fff");
+						        var startText = createText('开始游戏', 1300, quaCenterOfY * 2, 20, "#fff");
+						        startText.addEventListener('click', function (){
+						        	ws.emit('start');
+						        });
 								_.each($scope.players, function(v){
 								    var charInRoom = createSprite('backTexture', cardWidth, cardHeight);
-									if (v.id === $scope.player.id) {
+									if (v.token === $scope.player.token) {
 									    positionSet(charInRoom, centerOfX - cardWidth / 2, quaCenterOfY - cardHeight / 2);
 							            text1.text = (v.state === 'joined') ? '请准备' : '已经准备';
 									} else {
@@ -155,12 +161,13 @@
 							} else if ($scope.sceneType === 'gaming' || $scope.sceneType === 'turnOver') {
 							    stage.removeAllChildren();
 							    stage.removeAllEventListeners();
-								if ($scope.player.id === $scope.turn) {
+							    console.log($scope.turn);
+								if ($scope.player.token === $scope.turn) {
 								    createFuncBtn();
 								}
 								_.each($scope.players, function(value){
 									var playerCardGroup = _.partition(value.currentCard, function(v){return v.type === 7});
-									if (value.id === $scope.player.id) {
+									if (value.token === $scope.player.token) {
 									    _.each(playerCardGroup[1], function(v, i){
 									        $scope.player.camelNumber = playerCardGroup[0].length;
 											$scope.$apply();

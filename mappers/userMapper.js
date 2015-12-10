@@ -1,34 +1,63 @@
-var async = require('async');
 var pool = require('./connect');
 
-var getUserFromPrincipalSQL = 'SELECT COUNT(1) AS count FROM user WHERE principal = ?';
+function addUser(user, callback) {
+    pool.query('INSERT INTO user(name, principal, credential) VALUES(?, ?, ?)',
+	    [user.username, user.username, user.password], function (err, res) {
+		if (err) return callback(err);
 
-function addUser(user, response) {
-	async.waterfall([
-		function (callback) {
-	        pool.query(getUserFromPrincipalSQL, [user.username], function(err, res) {
-		        if (err) callback(err);
-
-				if (res.length === 0) {
-				    callback(null, 0);
-				} else {
-				    callback(null, res[0].count);
-				}
-	        });
-		},
-		function (resultCount, callback) {
-		    if (resultCount > 0) {
-			    return response.json({state : 2});
-			}
-			pool.query('INSERT INTO user(name, principal, credential) VALUES(?, ?, ?)', [user.username, user.username, user.password], function (err, res) {
-				if (err) callback(err);
-
-				return response.json({state : 1});
-			});
-		}
-	], function (err, result) {
-	    response.status(500).send(err.message);
+		user.id = res.insertId;
+		return callback(null, user);
 	});
 }
 
+function getUser(user, callback) {
+	pool.query("SELECT id, principal, credential FROM user WHERE principal = ?", [user.username], function(err, res) {
+		if (err) return callback(err);
+
+		return callback(null, res[0]);
+    });
+}
+
+function getSession(session, callback) {
+	var selectSQL = "SELECT token, user_id as userId, create_time as createTime FROM session";
+	var queryArray = [];
+	var queryStr = []
+	var query = "";
+	if (session.userId) {
+		queryStr.push("user_id = " + session.userId);
+		queryArray.push(session.userId);
+	}
+	if (session.token) {
+		queryStr.push("token = " + session.userId);
+		queryArray.push(session.token);
+	}
+	if (queryStr.length > 1) {
+		query = " WHERE " + queryStr.join(" AND ");
+	} else if (queryArray.length === 1) {
+		query = " WHERE " + queryStr[0];
+	}
+	pool.query(selectSQL + query, queryArray, function(err, res) {
+		if (err) return callback(err);
+
+		if (res.length > 0) {
+		    return callback(null, res[0]);
+		} else {
+		    return callback(null, session);
+		}
+    });
+}
+
+function addSession(session, callback) {
+	var insertSQL = "INSERT INTO session(token, user_id, create_time) VALUES(?, ?, now())";
+	pool.query(insertSQL, [session.token, session.userId], function(err, res) {
+			console.log(err);
+		if (err) return callback(err);
+
+		return callback(null, session);
+    });
+}
+
 exports.addUser = addUser;
+exports.getUser = getUser;
+exports.getSession = getSession;
+exports.addSession = addSession;

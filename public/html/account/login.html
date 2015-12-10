@@ -1,0 +1,25 @@
+<form class="form-horizontal" name="rForm">
+  <div class="form-group" ng-class="{true: 'has-error'}[rForm.username.$invalid]">
+    <label for="username" class="col-sm-1 control-label">用户名</label>
+    <div class="col-sm-2">
+        <input type="text" name="username" ng-model="user.username" class="form-control" placeholder="用户名" ng-minlength="6">
+        <div ng-messages="rForm.username.$error">
+            <p class="bg-danger" ng-message="minlength">最少需要6个字符</p>
+        </div>
+    </div>
+  </div>
+  <div class="form-group" ng-class="{true: 'has-error'}[rForm.password.$invalid]">
+    <label for="password" class="col-sm-1 control-label">密码</label>
+    <div class="col-sm-2">
+        <input type="password" name="password" ng-model="user.password" class="form-control" placeholder="密码" ng-minlength="6">
+        <div ng-messages="rForm.password.$error">
+            <p class="bg-danger" ng-message="minlength">最少需要6个字符</p>
+        </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-1 col-sm-11">
+      <button type="submit" ng-disabled="!user.username || !user.password" class="btn btn-default" ng-click="login()">登录</button>
+    </div>
+  </div>
+</form>

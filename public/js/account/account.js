@@ -5,7 +5,7 @@
 			views :{
 			    'content': {
 				    templateUrl : webUrl + '/account/register.html',
-					controller : function($scope, $http, $window, $stateParams) {
+					controller : function($scope, $http, $cookies, $state, $window, $stateParams) {
 						$scope.user = {
 						};
 
@@ -18,7 +18,10 @@
 					    		method : 'POST',
 					    		data : $scope.user
 					    	}).success(function (data) {
-								console.log(data);
+								if (data.state === 1) {
+									$cookies.put('gamer_token', data.token);
+									$state.go('games');
+								}
 					    	});
 					    }
 					}
@@ -30,7 +33,7 @@
 			views :{
 			    'content': {
 				    templateUrl : webUrl + '/account/login.html',
-					controller : function($scope, $http, $window, $stateParams) {
+					controller : function($scope, $http, $cookies, $state, $window, $stateParams) {
 						$scope.user = {
 						};
 
@@ -43,7 +46,10 @@
 					    		method : 'POST',
 					    		data : $scope.user
 					    	}).success(function (data) {
-								console.log(data);
+								if (data.state === 1) {
+									$cookies.put('gamer_token', data.token);
+									$state.go('games');
+								}
 					    	});
 					    }
 					}

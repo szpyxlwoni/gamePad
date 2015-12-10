@@ -1,4 +1,20 @@
 var _ = require('underscore');
+var cookieUtil = require('../util/cookie-util');
+var userService = require('../services/user');
+
+var rooms = {};
+var clients = [];
+var lostClients = [];
+
+for (var i = 0; i < 1024; i++) {
+	rooms[i] = {
+        id: i + 1, 
+		players:{},
+		lostPlayers: {},
+		state: 'end',
+		sceneType: 'preparing'
+	};
+}
 
 var players = [];
 var playerNumber = 0;
@@ -19,8 +35,8 @@ var Sign = function(name, type, values) {
 	this.values = values;
 }
 
-var Player = function(id, state, socketId) {
-	this.id = id;
+var Player = function(token, state, socketId) {
+	this.token = token;
 	this.state = state;
 	this.socketId = socketId;
 	this.signs = [];
@@ -31,8 +47,8 @@ var Player = function(id, state, socketId) {
 	this.total = 0;
 }
 
-function initCards() {
-	cards = [];
+function initCards(roomId) {
+	var cards = [];
 	for (var i = 0; i < 6; i++) {
 		cards.push(new Card("黄金", 2));
 		cards.push(new Card("白银", 3));
@@ -49,10 +65,11 @@ function initCards() {
 		cards.push(new Card("骆驼", 7));
 	}
 	cards = _.shuffle(cards);
+	rooms[roomId - 1].cards = cards;
 }
 
-function initSigns() {
-	signs = [];
+function initSigns(roomId) {
+	var signs = [];
 	signs.push(new Sign("钻石", 1, [5,5,5,7,7]));
 	signs.push(new Sign("黄金", 2, [5,5,5,6,6]));	
 	signs.push(new Sign("白银", 3, [5,5,5,5,5]));
@@ -63,61 +80,78 @@ function initSigns() {
 	signs.push(new Sign("4张牌的奖励", 9, _.shuffle([4,4,5,5,6,6])));
 	signs.push(new Sign("5张牌的奖励", 10, _.shuffle([8,8,9,10,10])));
 	signs.push(new Sign("最多骆驼的奖励", 7, 5));
+	rooms[roomId - 1].signs = signs;
 }
 
+
 function connect(io) {
-var broadcast = function(msg){
-	_.each(players, function(v){
-	    var socket = _.findWhere(io.sockets, {id:v.socketId});
-		if (socket) {
-		    msg.playerId = v.id;
-		    socket.emit('return.state', msg);
-		}
-	});
-};
- return function (socket) {
-	var position = _.findIndex(playerPosition, function (v){
-	    return v == 0;
-	});
-	var id = position + 1;
-	if (position == -1) {
+
+function offline(roomId, token) {
+	  var roomData = rooms[roomId - 1];
+	  if (roomData.lostPlayers[token]) {
+		  console.log('player ' + token + ' is offline');
+		  delete roomData.lostPlayers[token];
+		  delete roomData.players[token];
+          _.map(roomData.players, function(v) {
+	          v.state = 'joined';
+          });
+          roomData.sceneType = 'preparing';
+	      roomData.turn = undefined;
+		  rooms[roomId - 1] = roomData;
+		  console.log(roomData);
+          io.in(roomId).emit('return.state', roomData);
+	  }
+}
+
+return function (socket) {
+	var roomId = socket.handshake.query.roomId;
+	if (!roomId) {
+		roomId = _.findWhere(rooms, {state:'end'}).id;
+	}
+    rooms[roomId - 1].state = 'open';
+	var token = socket.handshake.query.token;
+	if (!token || token === 'undefined' || rooms[roomId - 1].players.length === 2) {
 		return;
 	}
-	socket.on('join', function(msg){
-		console.log('player ' + id + ' join');
-	    playerNumber++;
-		playerPosition[position] = 1;
-		players.push(new Player(id, 'joined', socket.id));
-		returnValue.sceneType = 'preparing';
-		returnValue.players = players;
-	    broadcast(returnValue);
+
+	socket.join(roomId);
+	delete rooms[roomId - 1].lostPlayers[token];
+	console.log('player ' + token + ' join the room' + roomId);
+	if (!rooms[roomId - 1].players[token]) {
+	    rooms[roomId - 1].players[token] = new Player(token, 'joined', socket.id);
+	}
+    io.in(roomId).emit('return.state', rooms[roomId - 1]);
+
+	socket.on('start', function () {
+		var roomData = rooms[roomId - 1];
+		if (_.size(roomData.players) === 2 && !_.findWhere(roomData.players, {state:'joined'})) {
+			roomData.sceneType = 'gaming';
+			initCards(roomId);
+			initSigns(roomId);
+			_.map(roomData.players, function (v){
+				roomData.players[v.token].currentCard = [];
+			    for (var i = 0; i < 5; i++) {
+			        roomData.players[v.token].currentCard.push({type:roomData.cards.pop().type, isSelect:false});
+		        }
+			});
+			roomData.market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:roomData.cards.pop().type, isSelect:false},{type:roomData.cards.pop().type, isSelect:false}];
+		    roomData.turn = _.sample(roomData.players).token;
+	    }
+		rooms[roomId - 1] = roomData;
+		console.log(roomData);
+	    io.in(roomId).emit('return.state', roomData);
 	});
 
 	socket.on('ready', function (){
-		console.log('player ' + id + ' ready');
-		_.map(players, function(v){
-			if (v.id === id) {
-			    v.state = 'ready';
+		console.log('player ' + token + ' ready');
+		var roomData = rooms[roomId - 1];
+		_.map(roomData.players, function(v){
+			if (v.token === token) {
+			    v.state = v.state === 'ready' ? 'joined' : 'ready';
 		    }
 		});
-		if (players.length === 2 && !_.findWhere(players, {state:'joined'})) {
-			returnValue.sceneType = 'gaming';
-			initCards();
-			initSigns();
-			returnValue.cards = cards;
-			returnValue.players[0].currentCard = [];
-			returnValue.players[1].currentCard = [];
-			for (var i = 0; i < 5; i++) {
-			    returnValue.players[0].currentCard.push({type:cards.pop().type, isSelect:false});
-			    returnValue.players[1].currentCard.push({type:cards.pop().type, isSelect:false});
-		    }
-			market = [{type:7, isSelect:false},{type:7, isSelect:false},{type:7, isSelect:false},{type:cards.pop().type, isSelect:false},{type:cards.pop().type, isSelect:false}];
-			returnValue.market = market;
-			returnValue.signs = signs;
-		    returnValue.turn = _.sample(players).id;
-	    }
-	    returnValue.players = players;
-	    broadcast(returnValue);
+		rooms[roomId - 1] = roomData;
+	    io.in(roomId).emit('return.state', roomData);
     });
 
   function unselectAllCard(value) {
@@ -127,7 +161,8 @@ var broadcast = function(msg){
   }
 
   socket.on('sell', function(msg){
-	  if (returnValue.sceneType !== 'gaming' || returnValue.turn !== id) {
+	  var roomData = rooms[roomId - 1];
+	  if (roomData.sceneType !== 'gaming' || roomData.turn !== token) {
 	      return;
 	  }
 	  console.log('player ' + id + ' sell');
@@ -175,10 +210,11 @@ var broadcast = function(msg){
   });
 
   socket.on('getCard', function(msg){
-	  if (returnValue.sceneType !== 'gaming' || returnValue.turn !== id) {
+	  var roomData = rooms[roomId - 1];
+	  if (roomData.sceneType !== 'gaming' || roomData.turn !== token) {
 	      return;
 	  }
-	  console.log('player ' + id + ' get');
+	  console.log('player ' + token + ' get');
 	  console.log(msg);
 	  var selected = _.partition(msg.market, function(v){return v.isSelect === true});
 	  var camelInMarket = _.filter(msg.market, function(v){return v.type === 7});
@@ -345,20 +381,17 @@ var broadcast = function(msg){
       broadcast(returnValue);
   });
 
+
   socket.on('disconnect', function(){
-      console.log('player ' + id + ' disconnect');
-      playerPosition[position] = 0;
-      playerNumber--;
-      players = _.filter(players, function(v){
-	      return v.id != id;
-      });
-      _.map(players, function(v) {
-	      v.state = 'joined';
-      });
-      returnValue.sceneType = 'preparing';
-      returnValue.players = players;
-	  returnValue.turn = undefined;
-      broadcast(returnValue);
+      console.log('player ' + token + ' disconnect');
+	  rooms[roomId - 1].lostPlayers[token] = 1;
+	  if (rooms[roomId - 1].sceneType === 'preparing'){
+	      offline(roomId, token);
+	  } else {
+	      setTimeout(function(){
+		      offline(roomId, token);
+	      }, 10000);
+	  }
   });
 
   socket.on('close', function(){
@@ -368,3 +401,4 @@ var broadcast = function(msg){
 }
 
 exports.connect = connect;
+exports.rooms = _.reject(rooms, function(v) {return v.state === 'end';});

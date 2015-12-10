@@ -1,13 +1,14 @@
 (function(){
-    var boardGame = angular.module('boardGame', ['ui.bootstrap', 'ui.router', 'ngMessages', 'ui.validate']);
+    var boardGame = angular.module('boardGame', ['ui.bootstrap', 'ui.router', 'ngMessages', 'ui.validate', 'ngCookies']);
 
     boardGame.constant('webUrl', '/html');
     boardGame.constant('serverUrl', '');
 
-	boardGame.config(function($stateProvider, $urlRouterProvider, webUrl, serverUrl, jaipurConfig, accountConfig){
-		$urlRouterProvider.otherwise("/login");
+	boardGame.config(function($stateProvider, $urlRouterProvider, webUrl, serverUrl, jaipurConfig, accountConfig, gameConfig){
+		$urlRouterProvider.otherwise("/games");
 
 		jaipurConfig($stateProvider, webUrl, serverUrl);
+		gameConfig($stateProvider, webUrl, serverUrl);
 		accountConfig($stateProvider, webUrl, serverUrl);
 	});
 

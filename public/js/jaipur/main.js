@@ -5,7 +5,7 @@
 			views :{
 			    'content': {
 				    templateUrl : webUrl + '/jaipur/index.html',
-					controller : function($scope, $window, $cookies, $uibModal, $timeout, $stateParams) {
+					controller : function($scope, $state, $window, $cookies, $uibModal, $timeout, $stateParams, $location) {
 	                    var ws;
 		                var _ = $window._;
 	                    var oneTexture, twoTexture, threeTexture, fourTexture, fiveTexture, sixTexture, sevenTexture, backTexture, charTexture, backgroundTexture;
@@ -30,14 +30,10 @@
 			            $scope.isOverCard = false;
 
 						function handleComplete() {
-							ws = io.connect('http://192.168.1.13:9000/jaipurServer?roomId=' + $stateParams.roomId + '&token=' + token);
+							ws = io.connect('http://localhost:9000/jaipurServer?roomId=' + $stateParams.roomId + '&token=' + token);
 
-							ws.on('connect', function () {
-								ws.emit('join');
-							});
-
-		                    ws.on('return.state', function (data){
-		                    	console.log(data);
+		                    ws.on('return.state', function (data) {
+		                    	$location.path('/jaipur/' + data.id);
 								$scope.sceneType = data.sceneType;
 								$scope.signs = data.signs;
 								$scope.player = data.players[token];
@@ -134,34 +130,9 @@
 					    var render = function() {
 							var centerOfX = wWidth / 2;
 							var quaCenterOfY = wHeight / 4;
-							if ($scope.sceneType === 'preparing') {
+							if ($scope.sceneType === 'gaming' || $scope.sceneType === 'turnOver') {
 							    stage.removeAllChildren();
 							    stage.removeAllEventListeners();
-						        var text1 = createText('等待玩家', centerOfX + 100, quaCenterOfY, 20, "#fff");
-								text1.addEventListener("click", function (){
-							        ws.emit('ready');
-								});
-						        var text2 = createText('等待玩家', centerOfX + 100, quaCenterOfY * 3, 20, "#fff");
-						        createText('您的位置-----', centerOfX - 250, quaCenterOfY, 20, "#fff");
-						        createText('对手的位置---', centerOfX - 250, quaCenterOfY * 3, 20, "#fff");
-						        var startText = createText('开始游戏', 1300, quaCenterOfY * 2, 20, "#fff");
-						        startText.addEventListener('click', function (){
-						        	ws.emit('start');
-						        });
-								_.each($scope.players, function(v){
-								    var charInRoom = createSprite('backTexture', cardWidth, cardHeight);
-									if (v.token === $scope.player.token) {
-									    positionSet(charInRoom, centerOfX - cardWidth / 2, quaCenterOfY - cardHeight / 2);
-							            text1.text = (v.state === 'joined') ? '请准备' : '已经准备';
-									} else {
-									    positionSet(charInRoom, centerOfX - cardWidth / 2, quaCenterOfY * 3 - cardHeight / 2);
-							            text2.text = (v.state === 'joined') ? '请准备' : '已经准备';
-									}
-								});
-							} else if ($scope.sceneType === 'gaming' || $scope.sceneType === 'turnOver') {
-							    stage.removeAllChildren();
-							    stage.removeAllEventListeners();
-							    console.log($scope.turn);
 								if ($scope.player.token === $scope.turn) {
 								    createFuncBtn();
 								}
@@ -204,7 +175,7 @@
 								var rivalScore = 0;
 								var winThisRound;
 								_.each($scope.players, function(v) {
-								    if (v.id === $scope.player.id) {
+								    if (v.token === $scope.player.token) {
 									    yourScore = v.total;
 								        winThisRound = v.winThisRound;
 									} else {
@@ -214,7 +185,7 @@
 								confirm_info.text = '第一轮结束，您的得分是' + yourScore + ', 对手的得分是' + rivalScore + '     ' + (winThisRound ? '您赢了' : '您输了');
                                 label_ok.text = '进入下一轮';
 							    buttonok.addEventListener('pressup', function (){
-									confirmBox.visible = false;
+									label_ok.text = '等待对手开始';
 									stage.update();
 									ws.emit('roundStart');
 								});
@@ -224,17 +195,18 @@
 								var rivalScore = 0;
 								var winThisRound;
 								_.each($scope.players, function(v) {
-								    if (v.id === $scope.player.id) {
+								    if (v.token === $scope.player.token) {
 									    yourScore = v.total;
 								        winThisRound = v.winThisRound;
 									} else {
 									    rivalScore = v.total;
 									}
 								});
+								buttonok.removeAllEventListeners();
 							    buttonok.addEventListener('pressup', function (){
 									confirmBox.visible = false;
 									stage.update();
-									$window.location.reload();
+									$state.go('room', {'domain':$state.current.name, 'roomId':$stateParams.roomId});
 								});
 								confirm_info.text = '游戏结束，您的得分是' + yourScore + ', 对手的得分是' + rivalScore + '     ' + (winThisRound ? '您赢了' : '您输了');
                                 label_ok.text = '离开游戏';
@@ -363,7 +335,7 @@
 
 						function checkTurnOver() {
 							$scope.isOverCard = false;
-							if ($scope.sceneType === 'turnOver' && $scope.turn === $scope.player.id) {
+							if ($scope.sceneType === 'turnOver' && $scope.turn === $scope.player.token) {
 								var count = 0;
 								_.each($scope.signs, function(v) {
 									if (v.values.length === 0) {
@@ -372,7 +344,7 @@
 									}
 								});
 								if (count >= 3) {
-									ws.emit('roundOver', {'players': $scope.players, 'market': $scope.market});
+									ws.emit('roundOver');
 								    confirmBox.visible = true;
 								} else {
 									if ($scope.cards.length === 0 && $scope.market.length < 5) {

@@ -1,4 +1,11 @@
-<div ng-repeat="player in players">
-	<div ng-bind="player.name"></div>
+<div class="col-sm-2 col-xs-12">
+	<div ng-repeat="player in room.players" class="border">
+		<div class="name" ng-bind="player.name"></div>
+	    <div class="victory-rate">胜率：<span ng-bind="player.victoryRate"></span></div>
+    	<div class="praise">好评数：<span ng-bind="player.praise"></span></div>
+	    <div class="comment">差评数：<span ng-bind="player.comment"></span></div>
+    </div>
 </div>
-<div ng-click="gameStart()">游戏开始</div>
+<div ng-show="isHost()" ng-click="gameStart()">游戏开始</div>
+<div ng-click="ready()" ng-bind="player.state === 'joined'">准备</div>
+<div ng-click="exit()">离开房间</div>

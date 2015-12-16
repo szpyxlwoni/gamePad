@@ -39,3 +39,26 @@ body {
 	text-align: center;
 	padding : 20px;
 }
+
+.pagesection h2, .portlet h2, .pagesection h3, .portlet h3 {
+    text-transform: uppercase;
+    font-size: 14px;
+    padding: 12px 12px 12px 12px;
+    border-bottom: 1px rgba(0,0,0,.5) solid;
+    background-color: #ebd5bd;
+}
+
+.pagesection .portlet {
+    background-color: #f5eade;
+    padding: 12px 12px 12px 12px;
+    margin-bottom: 14px;
+    position: relative;
+    box-shadow: 1px 1px 4px rgba(0,0,0,.5);
+}
+
+.pageheader {
+    background-color: #f5eade;
+    padding: 12px 12px 0px 12px;
+    margin: 0px 0px 20px 0px;
+    position: relative;
+}

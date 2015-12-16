@@ -1,6 +1,5 @@
 var async = require('async');
 var crypto = require('crypto');
-var md5 = crypto.createHash('md5');
 var userMapper = require('../mappers/userMapper');
 
 function addUser(user, resultCallback) {
@@ -11,7 +10,7 @@ function addUser(user, resultCallback) {
 		function (result, callback) {
 		    if (result) return resultCallback(null, 2);
 
-			user.password = md5.update(user.password).digest('hex');
+			user.password = crypto.createHash('md5').update(user.password).digest('hex');
 			return userMapper.addUser(user, callback);
 		},
 		function (user, callback) {
@@ -60,7 +59,7 @@ function login(user, resultCallback) {
 		function (dbUser, callback) {
 		console.log(dbUser);
 		    if (!dbUser) return resultCallback(null, 2);
-		    if (dbUser.credential !== md5.update(user.password).digest('hex')) return resultCallback(null, 3);
+		    if (dbUser.credential !== crypto.createHash('md5').update(user.password).digest('hex')) return resultCallback(null, 3);
 
 			userMapper.getSession({'userId':dbUser.id}, function(err, session){
 				console.log(dbUser.id);

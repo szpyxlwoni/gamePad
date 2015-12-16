@@ -10,11 +10,58 @@ function addUser(user, callback) {
 	});
 }
 
+var selectUser = "SELECT id, name, principal, credential, state, room_id as roomId FROM user"
+
 function getUser(user, callback) {
-	pool.query("SELECT id, principal, credential FROM user WHERE principal = ?", [user.username], function(err, res) {
+	pool.query(selectUser + " WHERE principal = ?", [user.username], function(err, res) {
 		if (err) return callback(err);
 
 		return callback(null, res[0]);
+    });
+}
+
+function getUserFromId(userId, callback) {
+	pool.query(selectUser + " WHERE id = ?", [userId], function(err, res) {
+		if (err) return callback(err);
+
+		return callback(null, res[0]);
+    });
+}
+
+function updateUser(user, callback) {
+	var updateSQL = "UPDATE user SET";
+	var queryArray = [];
+	var queryStr = []
+	var query = "";
+	if (user.name) {
+		queryStr.push("name = ?");
+		queryArray.push(user.name);
+	}
+	if (user.username) {
+		queryStr.push("principal = ?");
+		queryArray.push(user.username);
+	}
+	if (user.password) {
+		queryStr.push("cridential = ?");
+		queryArray.push(user.password);
+	}
+	if (user.state) {
+		queryStr.push("state = ?");
+		queryArray.push(user.state);
+	}
+	if (user.roomId) {
+		queryStr.push("roomId = ?");
+		queryArray.push(user.roomId);
+	}
+	if (queryStr.length > 1) {
+		query = queryStr.join(",");
+	} else if (queryArray.length === 1) {
+		query = queryStr[0];
+	}
+	pool.query(updateSQL + query + " WHERE id = " + user.id, queryArray, function(err, res) {
+		if (err) return callback(err);
+
+		return callback(null, res);
     });
 }
 
@@ -24,11 +71,11 @@ function getSession(session, callback) {
 	var queryStr = []
 	var query = "";
 	if (session.userId) {
-		queryStr.push("user_id = " + session.userId);
+		queryStr.push("user_id = ?");
 		queryArray.push(session.userId);
 	}
 	if (session.token) {
-		queryStr.push("token = " + session.userId);
+		queryStr.push("token = ?");
 		queryArray.push(session.token);
 	}
 	if (queryStr.length > 1) {
@@ -61,3 +108,4 @@ exports.addUser = addUser;
 exports.getUser = getUser;
 exports.getSession = getSession;
 exports.addSession = addSession;
+exports.getUserFromId = getUserFromId;

@@ -1,12 +1,12 @@
-<table class="table table-bordered col-sm-12 col-xs-12">
-   <thead>
-   	   <td>房间号</td>
-       <td>创建者</td>
-   </thead>
-   <tbody>
-   	   <tr ng-repeat="room in rooms" ng-click="goToRoom(room)">
-   	       <td ng-bind="room.id"></td>
-   	       <td ng-bind="room.creatorName"></td>
-   	   </tr>
-   </tbody>
-</table>
+<div class="col-sm-12 col-xs-12"><button class="button col-sm-1 col-xs-1" ng-click="createRoom()">创建房间</button><button class="button col-sm-1 col-xs-1" ng-click="quickJoin()">快速加入</button></div>
+<div class="col-sm-12 col-xs-12 pagesection">
+   <h2>房间列表</h2>
+   <div class="portlet">
+      <div ng-repeat="room in rooms" ng-click="goToRoom(room)">
+         <div ng-bind="room.id"></div>
+         <div ng-repeat="p in room.players">
+            <div ng-bind="p.name"></div>
+         </div>
+      </div>
+   </div>
+</div>
